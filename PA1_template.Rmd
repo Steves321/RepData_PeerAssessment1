@@ -1,25 +1,67 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template"
+output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 ## Loading and preprocessing the data
 
-
+```{r}
+download.file('https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip', destfile = "data")
+data <- read.csv('activity.csv')
+head(data)
+library(dplyr)
+library(lubridate)
+library(knitr)
+```
 
 ## What is mean total number of steps taken per day?
 
-
+```{r}
+sum(data$steps, na.rm = TRUE) 
+hist(data$steps)
+mean(data$steps, na.rm = TRUE) 
+median(data$steps, na.rm = TRUE)
+```
 
 ## What is the average daily activity pattern?
 
-
+```{r}
+plot(tapply(data$steps, data$interval, mean, na.rm = TRUE), type="l")
+max_steps <- tapply(data$steps, data$interval, mean, na.rm = TRUE)
+which.max(max_steps)
+```
 
 ## Imputing missing values
 
-
+```{r}
+data %>% filter(is.na(steps) == TRUE) %>% summarise(length(steps))
+data_2 <- data %>% group_by(interval) %>% summarise(mean_steps = mean(steps, na.rm = TRUE))
+data_3 <- left_join(data,data_2,by = 'interval')
+data_4 <- data_3 %>% mutate(fixed_steps = ifelse(is.na(steps) == TRUE, mean_steps, steps))
+new_data <- data_4 %>% select(steps = fixed_steps, date, interval)
+hist(new_data$steps)
+mean(new_data$steps, na.rm = TRUE)
+median(new_data$steps, na.rm = TRUE)
+sum(new_data$steps, na.rm = TRUE) 
+#The means and medians do not differ. The sum is higher
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+new_data_2 <- new_data %>% mutate(weekday = ifelse(weekdays(as_date(new_data$date), abbreviate = FALSE) == 'Sunday' | weekdays(as_date(new_data$date), abbreviate = FALSE) == 'Saturday','weekend','weekday'))
+new_data_weekday <- new_data_2 %>% filter(weekday == 'weekday')
+new_data_weekend <- new_data_2 %>% filter(weekday == 'weekend')
+par(mfrow=c(2,1),mar=c(4,4,2,1))
+plot(tapply(new_data_weekday$steps, new_data_weekday$interval, mean, na.rm = TRUE), type = 'l')
+plot(tapply(new_data_weekend$steps, new_data_weekend$interval, mean, na.rm = TRUE), type = 'l')
+```
+
+
+
+
+
